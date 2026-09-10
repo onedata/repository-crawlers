@@ -10,6 +10,7 @@ __author__ = "Bartosz Walkowicz"
 __copyright__ = "Copyright (C) 2026 Onedata (onedata.org)"
 __license__ = "This software is released under the MIT license cited in LICENSE.txt"
 
+import re
 from collections.abc import AsyncIterator
 from dataclasses import dataclass
 from typing import assert_never
@@ -141,6 +142,11 @@ class VipClient:
         console.debug(f"Resolving files for dataset: {folder_name}")
         files, folders_meta = await self._collect_files(folder_id, path_prefix="")
         console.info(f"Resolved {folder_name}: {len(files)} file(s)")
+        console.debug(f"Resolving external config files for dataset: {folder_name}")
+        external_config_files = await self._collect_external_config_files(folders_meta)
+        if external_config_files:
+            console.info(f"Resolved {folder_name}: {len(external_config_files)} external file(s)")
+            files.extend(external_config_files)
         return files, folders_meta
 
     # --- Internal helpers ---
@@ -272,6 +278,31 @@ class VipClient:
                     break
 
         return files, folders_meta
+
+    async def _collect_external_config_files(
+        self, folders_meta: dict[str, JsonObject] | None = None
+    ) -> list[VipFile]:
+        """Collect external config directory files, specific to this dataset"""
+        folders_meta = folders_meta or {}
+        steam_press: list[str] = [
+            key for key in folders_meta if re.search(r"(STEAM[^/.]*|PRESS[^/.]*)$", key)
+        ]
+        config_folder_id = None
+        config_folder_path = None
+        for key in steam_press:
+            acq_meta = folders_meta[key].get("meta", {})
+            if acq_meta.get("config") is not None:
+                config: JsonObject = acq_meta.get("config")
+                config_folder_id = config.get("folder_id")
+                config_folder_path = config.get("path")
+                break
+        if config_folder_id is None or config_folder_path is None:
+            console.warning("Failed to associate config files to this dataset")
+            return []
+        external_files, _ = await self._collect_files(
+            config_folder_id, path_prefix=f"config/{config_folder_path.split('/')[-1]}"
+        )
+        return external_files
 
 
 def _as_girder_object_list(value: object) -> list[JsonObject]:
