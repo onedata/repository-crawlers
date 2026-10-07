@@ -12,6 +12,7 @@ __author__ = "Bartosz Walkowicz"
 __copyright__ = "Copyright (C) 2026 Onedata (onedata.org)"
 __license__ = "This software is released under the MIT license cited in LICENSE.txt"
 
+import json
 import re
 from collections.abc import Sequence
 
@@ -61,12 +62,24 @@ def parse_vip_record(
     title = folder.get("name") or folder_id
     meta: dict = folder.get("meta", {})
 
-    description = _description_from_meta(meta, folders_meta)
+    tech_description = _technical_description_from_meta(meta, folders_meta)
+    subject_description = meta.get("description") or "Raw bruker dataset"
 
     # Use the most recent timestamp available
     datetime_val = folder.get("updated") or folder.get("created") or None
 
-    subject = meta.get("SUBJECT_study_modalities") or None
+    _default_subjects = [
+        "nuclear magnetic resonance spectroscopy",
+        "NMR",
+        "spectroscopy",
+        "MRS",
+        "brain imaging",
+        "metabolite quantification",
+        "rat",
+        "biomedical",
+        "raw mri data",
+        "preclinical",
+    ]
 
     metadata = DataCiteRecord(
         identifier=folder_id,
@@ -82,9 +95,12 @@ def parse_vip_record(
         publication_year=year_from_iso(datetime_val),
         resource_type_general="Dataset",
         resource_type_value=_VIP_RESOURCE_TYPE_VALUE,
-        subjects=[subject] if subject else [],
+        subjects=_default_subjects,
         dates=([Date(value=datetime_val, date_type=DateType.UPDATED)] if datetime_val else []),
-        descriptions=([Description(value=description)] if description else []),
+        descriptions=[
+            Description(value=subject_description),
+            Description(value=tech_description, description_type="TechnicalInfo"),
+        ],
         rights_list=[_VIP_RIGHTS],
     )
 
@@ -98,18 +114,18 @@ def parse_vip_record(
     )
 
 
-def _description_from_meta(meta: JsonObject, folders_meta: dict[str, JsonObject]) -> str:
+def _technical_description_from_meta(meta: JsonObject, folders_meta: dict[str, JsonObject]) -> str:
     gender = meta.get("SUBJECT_gender") or "unknown"
     weight = meta.get("SUBJECT_study_weight") or "unknown"
     date_of_birth = meta.get("SUBJECT_study_dbirth") or "unknown"
     manufacturer = meta.get("ORIGIN") or "unknown"
 
-    description = (
-        f"\ngender: {gender}\n"
-        f"weight: {weight}\n"
-        f"dateofbirth: {date_of_birth}\n"
-        f"manufacturer: {manufacturer}\n"
-    )
+    tech_desc_map = {
+        "gender": gender,
+        "weight": weight,
+        "dateofbirth": date_of_birth,
+        "manufacturer": manufacturer,
+    }
     days = [key for key in folders_meta if key.startswith("/day")]
 
     species = "unknown"
@@ -124,19 +140,25 @@ def _description_from_meta(meta: JsonObject, folders_meta: dict[str, JsonObject]
         if species != "unknown" and organ != "unknown":
             break
 
-    description += f"species: {species}\norgan: {organ}\n"
+    tech_desc_map["species"] = species
+    tech_desc_map["organ"] = organ
 
     working_carrier_frequency = "unknown"
     nucleus = "unknown"
+    echo_time = "unknown"
 
     method = [key for key in folders_meta if re.search(r"STEAM[^/]*/headers/method$", key)]
 
     for key in method:
         day_meta = folders_meta[key].get("meta", {})
         if day_meta.get("PVM_FrqRef") is not None and working_carrier_frequency == "unknown":
-            working_carrier_frequency = f"{day_meta.get('PVM_FrqRef').split(' ')[0]}MHz"
+            working_carrier_frequency = (
+                f"{round(float(day_meta.get('PVM_FrqRef').split(' ')[0]), 4)}MHz"
+            )
         if day_meta.get("PVM_NucleiPpmWork") is not None and nucleus == "unknown":
             nucleus = f"{day_meta.get('PVM_NucleiPpmWork').split()[0].split('<')[1].split('>')[0]}"
+        if day_meta.get("PVM_EchoTime") is not None and echo_time == "unknown":
+            echo_time = f"{day_meta.get('PVM_EchoTime')}ms"
         if working_carrier_frequency != "unknown" and nucleus != "unknown":
             break
 
@@ -150,10 +172,8 @@ def _description_from_meta(meta: JsonObject, folders_meta: dict[str, JsonObject]
             acquisition_sequence = f"{day_meta.get('Method')}"
             break
 
-    description += (
-        f"acquisition_sequence: {acquisition_sequence}\n"
-        f"working_carrier_frequency: {working_carrier_frequency}\n"
-        f"nucleus: {nucleus}\n"
-    )
-
-    return description
+    tech_desc_map["acquisition_sequence"] = acquisition_sequence
+    tech_desc_map["echo_time"] = echo_time
+    tech_desc_map["working_carrier_frequency"] = working_carrier_frequency
+    tech_desc_map["nucleus"] = nucleus
+    return json.dumps({k: v for k, v in tech_desc_map.items() if v != "unknown"})
