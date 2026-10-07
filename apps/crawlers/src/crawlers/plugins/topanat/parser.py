@@ -49,7 +49,11 @@ _RIGHTS = Rights(
     text="EBI Terms of Use",
     uri="https://www.ebi.ac.uk/about/terms-of-use/",
 )
-
+_DESCRIPTION_NOTE = (
+    "NOTE: The data is queried live from the GWAS server whenever read via "
+    "Onedata. The query may take a couple of minutes to be processed, "
+    "despite small result file sizes."
+)
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Builders
@@ -65,7 +69,7 @@ def build_trait_record(info: TraitInfo) -> OnedataDataset:
 
     descriptions: list[Description] = []
     if info.description:
-        descriptions.append(Description(value=info.description))
+        descriptions.append(Description(value=info.description + f"\n\n{_DESCRIPTION_NOTE}"))
 
     related: list[RelatedIdentifier] = []
     if info.uri:
@@ -143,7 +147,11 @@ def build_publication_record(info: PublicationInfo) -> OnedataDataset:
         resource_type_value=_RESOURCE_TYPE_VALUE,
         subjects=_SUBJECTS,
         dates=dates,
-        descriptions=([Description(value=f"Published in {info.journal}.")] if info.journal else []),
+        descriptions=(
+            [Description(value=f"Published in {info.journal}.\n\n{_DESCRIPTION_NOTE}")]
+            if info.journal
+            else [Description(value=_DESCRIPTION_NOTE)]
+        ),
         related_identifiers=related,
         rights_list=[_RIGHTS],
     )
