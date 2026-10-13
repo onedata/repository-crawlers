@@ -234,6 +234,14 @@ def _ensure_public_record(
     details = oneprovider.get_share_details(share_id) or {}
     existing: str | None = details.get("handleId")
     if existing:
+        if config.identifier_policy == "amend-metadata":
+            metadata_details = onezone.get_handle_details(existing).get("metadata")
+            metadata_matches = metadata_details == dataset.metadata_xml
+            if not metadata_matches:
+                onezone.update_handle(
+                    handle_id=existing,
+                    metadata_xml=dataset.metadata_xml,
+                )
         return existing
 
     request_public_handle = config.record_identifier_type == "pid"

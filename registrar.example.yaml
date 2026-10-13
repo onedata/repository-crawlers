@@ -23,7 +23,7 @@ onedata:
   oneprovider_panel_port: 443
   verify_ssl: true
   # HTTP request timeout in seconds for Onezone, Oneprovider, and Onepanel API calls.
-  # Consider increasing if you are using the emulateRangeRead option with 
+  # Consider increasing if you are using the emulateRangeRead option with
   # HTTP resources that are large or take a long time to be retrieved.
   timeout: 30
 
@@ -103,6 +103,7 @@ public_data_records:
   #   always-generate-new      — ignore input PIDs, always overwrite with newly minted ones.
   #   always-reuse-existing    — every dataset must include a non-empty PID to reuse.
   #   generate-new-if-missing  — reuse when present, mint otherwise.
+  #   amend-metadata           — reuse when present and update the metadata, mint otherwise.
   identifier_policy: generate-new-if-missing
 
 

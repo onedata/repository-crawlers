@@ -224,6 +224,7 @@ class PublicDataRecords(ConfigBase):
         "always-generate-new",
         "always-reuse-existing",
         "generate-new-if-missing",
+        "amend-metadata",
     ] = opt(
         "generate-new-if-missing",
         description=(
@@ -231,6 +232,8 @@ class PublicDataRecords(ConfigBase):
             "`always-generate-new` ignores them; "
             "`always-reuse-existing` requires every dataset to provide one; "
             "`generate-new-if-missing` reuses when present, mints otherwise."
+            "`amend-metadata` when present updates the metadata of the existing "
+            "handle, otherwise mints a new one."
         ),
     )
 
