@@ -156,26 +156,25 @@ class OnezoneClient:
         logger.debug("Fetched handle details for %s", handle_id)
         return details
 
-
     def update_handle(  # noqa: PLR0913 — REST shape, kwargs-only by design
-            self,
-            *,
-            handle_id: str,
-            metadata_xml: str,
-        ) -> None:
-            """Update a public handle for a share."""
-            payload: dict[str, object] = {
-                "metadata": metadata_xml,
-            }
+        self,
+        *,
+        handle_id: str,
+        metadata_xml: str,
+    ) -> None:
+        """Update a public handle for a share."""
+        payload: dict[str, object] = {
+            "metadata": metadata_xml,
+        }
 
-            url = f"{self._base_url}/handles/{handle_id}"
-            response = requests.patch(
-                url=url,
-                headers=self._headers_json(),
-                json=payload,
-                verify=self.verify_ssl,
-                timeout=self.timeout,
-            )
-            handle_error(response, service=SERVICE_NAME)
+        url = f"{self._base_url}/handles/{handle_id}"
+        response = requests.patch(
+            url=url,
+            headers=self._headers_json(),
+            json=payload,
+            verify=self.verify_ssl,
+            timeout=self.timeout,
+        )
+        handle_error(response, service=SERVICE_NAME)
 
-            logger.info("Updated handle %s", handle_id)
+        logger.info("Updated handle %s", handle_id)
