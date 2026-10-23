@@ -170,18 +170,20 @@ def _register_files(  # noqa: PLR0913
         existing = oneprovider.lookup_file_id(space_name=target.space_name, path=dest_path)
         if existing:
             if config.amend:
-                location = oneprovider.get_file_storage_location(existing)
-                if location != file_info.url:
-                    oneprovider.remove_file(existing)
-                    oneprovider.register_file(
-                        storage_id=target.storage_id,
-                        space_id=target.space_id,
-                        file_url=file_info.url,
-                        dest_path=dest_path,
-                    )
-                    registered += 1
-                    sink.tick_file()
-                    continue
+                provider_id = oneprovider.get_provider_id()
+                if provider_id:
+                    location = oneprovider.get_file_storage_location(existing, provider_id)
+                    if location != file_info.url:
+                        oneprovider.remove_file(existing)
+                        oneprovider.register_file(
+                            storage_id=target.storage_id,
+                            space_id=target.space_id,
+                            file_url=file_info.url,
+                            dest_path=dest_path,
+                        )
+                        registered += 1
+                        sink.tick_file()
+                        continue
             skipped += 1
             sink.tick_file()
             continue

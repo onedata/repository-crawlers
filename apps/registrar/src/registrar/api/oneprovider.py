@@ -85,7 +85,7 @@ class OneproviderClient:
 
         return None
 
-    def get_file_storage_location(self, file_id: str) -> str | None:
+    def get_file_storage_location(self, file_id: str, registering_provider: str) -> str | None:
         """Returns information about file location."""
         url = f"{self._base_url}/data/{file_id}/storage_locations"
         response = requests.get(
@@ -97,22 +97,14 @@ class OneproviderClient:
 
         if response.ok:
             data: dict = response.json()
-            location = next(
-                (
-                    storage.get("location")
-                    for provider in data.get(
-                        "locationsPerProvider",
-                        {},
-                    ).values()
-                    for storage in provider.get(
-                        "locationsPerStorageBackend",
-                        {},
-                    ).values()
-                    if storage.get("location")
-                ),
-                None,
-            )
-            return location
+            for provider_id, locations in data.get("locationsPerProvider", {}).items():
+                if provider_id != registering_provider:
+                    continue
+
+                for storage in locations.get("locationsPerStorageBackend", {}).values():
+                    location: str | None = storage.get("location")
+                    if location:
+                        return location
         return None
 
     def get_file_attrs(self, file_id: str) -> dict | None:
@@ -213,4 +205,22 @@ class OneproviderClient:
         if response.ok:
             details: dict | None = response.json()
             return details
+        return None
+
+    # ─────────────────────────────────────────────────────────────────────────
+    # Oneprovider operations
+    # ─────────────────────────────────────────────────────────────────────────
+
+    def get_provider_id(self) -> str | None:
+        """Get the Oneprovider ID."""
+        url = f"{self._base_url}/configuration"
+        response = requests.get(
+            url=url,
+            headers=self._headers(),
+            verify=self.verify_ssl,
+            timeout=self.timeout,
+        )
+        if response.ok:
+            provider_id: str | None = response.json().get("providerId")
+            return provider_id
         return None
