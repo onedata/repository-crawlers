@@ -85,6 +85,36 @@ class OneproviderClient:
 
         return None
 
+    def get_file_storage_location(self, file_id: str) -> str | None:
+        """Returns information about file location."""
+        url = f"{self._base_url}/data/{file_id}/storage_locations"
+        response = requests.get(
+            url=url,
+            headers=self._headers(),
+            verify=self.verify_ssl,
+            timeout=self.timeout,
+        )
+
+        if response.ok:
+            data: str | None = response.json()
+            location = next(
+                (
+                    storage.get("location")
+                    for provider in data.get(
+                        "locationsPerProvider",
+                        {},
+                    ).values()
+                    for storage in provider.get(
+                        "locationsPerStorageBackend",
+                        {},
+                    ).values()
+                    if storage.get("location")
+                ),
+                None,
+            )
+            return location
+        return None
+
     def get_file_attrs(self, file_id: str) -> dict | None:
         """Fetch file attributes (including `shares`), or `None` when missing."""
         url = f"{self._base_url}/data/{file_id}"
@@ -139,6 +169,17 @@ class OneproviderClient:
         file_id: str = response.json().get("fileId")
         logger.debug("Registered file: %s -> %s", dest_path, file_id)
         return file_id
+
+    def remove_file(self, file_id: str) -> None:
+        """Removes file specified by file ID"""
+        url = f"{self._base_url}/data/{file_id}"
+        response = requests.delete(
+            url=url,
+            headers=self._headers(),
+            verify=self.verify_ssl,
+            timeout=self.timeout,
+        )
+        handle_error(response, service=SERVICE_NAME)
 
     # ─────────────────────────────────────────────────────────────────────────
     # Share operations
