@@ -246,7 +246,6 @@ both `onedata-url` and `pid` types:
 | `always-reuse-existing` | `publicHandleToReuse = pid` | Fail with `RecordRequirementError` |
 | `generate-new-if-missing` | `publicHandleToReuse = pid` | Omit `publicHandleToReuse` |
 | `always-generate-new` | Ignore the PID | Omit `publicHandleToReuse` |
-| `amend-metadata` | `publicHandleToReuse = pid` | Omit `publicHandleToReuse` |
 
 The default is `generate-new-if-missing` — the safest option for batch
 runs where some datasets carry PIDs from previous systems and others

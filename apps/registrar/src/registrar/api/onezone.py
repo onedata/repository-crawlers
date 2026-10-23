@@ -156,7 +156,7 @@ class OnezoneClient:
         logger.debug("Fetched handle details for %s", handle_id)
         return details
 
-    def update_handle(  # noqa: PLR0913 — REST shape, kwargs-only by design
+    def update_handle(
         self,
         *,
         handle_id: str,

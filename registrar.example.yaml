@@ -103,7 +103,6 @@ public_data_records:
   #   always-generate-new      — ignore input PIDs, always overwrite with newly minted ones.
   #   always-reuse-existing    — every dataset must include a non-empty PID to reuse.
   #   generate-new-if-missing  — reuse when present, mint otherwise.
-  #   amend-metadata           — reuse when present and update the metadata, mint otherwise.
   identifier_policy: generate-new-if-missing
 
 
