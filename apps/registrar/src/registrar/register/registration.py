@@ -241,7 +241,7 @@ def _ensure_public_record(  # noqa: PLR0913
     share_id: str,
     onezone: OnezoneClient,
     oneprovider: OneproviderClient,
-    amend: str,
+    amend: bool,
 ) -> str:
     """Return the public-data-record identifier for `dataset`.
 

@@ -96,7 +96,7 @@ class OneproviderClient:
         )
 
         if response.ok:
-            data: str | None = response.json()
+            data: dict = response.json()
             location = next(
                 (
                     storage.get("location")
