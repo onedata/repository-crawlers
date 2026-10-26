@@ -23,7 +23,7 @@ onedata:
   oneprovider_panel_port: 443
   verify_ssl: true
   # HTTP request timeout in seconds for Onezone, Oneprovider, and Onepanel API calls.
-  # Consider increasing if you are using the emulateRangeRead option with 
+  # Consider increasing if you are using the emulateRangeRead option with
   # HTTP resources that are large or take a long time to be retrieved.
   timeout: 30
 

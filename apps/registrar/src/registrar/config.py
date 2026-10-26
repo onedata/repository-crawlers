@@ -265,6 +265,12 @@ class RegisterConfig(CommonConfig):
         ),
     )
     public_data_records: PublicDataRecords = opt(default_factory=PublicDataRecords)
+    amend: bool = opt(
+        False,
+        description=(
+            "Update changed dataset metadata handles and re-register files whose URLs have changed."
+        ),
+    )
 
 
 class ListSpacesConfig(CommonConfig):

@@ -85,6 +85,28 @@ class OneproviderClient:
 
         return None
 
+    def get_file_storage_location(self, file_id: str, registering_provider: str) -> str | None:
+        """Returns information about file location."""
+        url = f"{self._base_url}/data/{file_id}/storage_locations"
+        response = requests.get(
+            url=url,
+            headers=self._headers(),
+            verify=self.verify_ssl,
+            timeout=self.timeout,
+        )
+
+        if response.ok:
+            data: dict = response.json()
+            for provider_id, locations in data.get("locationsPerProvider", {}).items():
+                if provider_id != registering_provider:
+                    continue
+
+                for storage in locations.get("locationsPerStorageBackend", {}).values():
+                    location: str | None = storage.get("location")
+                    if location:
+                        return location
+        return None
+
     def get_file_attrs(self, file_id: str) -> dict | None:
         """Fetch file attributes (including `shares`), or `None` when missing."""
         url = f"{self._base_url}/data/{file_id}"
@@ -140,6 +162,17 @@ class OneproviderClient:
         logger.debug("Registered file: %s -> %s", dest_path, file_id)
         return file_id
 
+    def remove_file(self, file_id: str) -> None:
+        """Removes file specified by file ID"""
+        url = f"{self._base_url}/data/{file_id}"
+        response = requests.delete(
+            url=url,
+            headers=self._headers(),
+            verify=self.verify_ssl,
+            timeout=self.timeout,
+        )
+        handle_error(response, service=SERVICE_NAME)
+
     # ─────────────────────────────────────────────────────────────────────────
     # Share operations
     # ─────────────────────────────────────────────────────────────────────────
@@ -172,4 +205,22 @@ class OneproviderClient:
         if response.ok:
             details: dict | None = response.json()
             return details
+        return None
+
+    # ─────────────────────────────────────────────────────────────────────────
+    # Oneprovider operations
+    # ─────────────────────────────────────────────────────────────────────────
+
+    def get_provider_id(self) -> str | None:
+        """Get the Oneprovider ID."""
+        url = f"{self._base_url}/configuration"
+        response = requests.get(
+            url=url,
+            headers=self._headers(),
+            verify=self.verify_ssl,
+            timeout=self.timeout,
+        )
+        if response.ok:
+            provider_id: str | None = response.json().get("providerId")
+            return provider_id
         return None

@@ -108,7 +108,14 @@ def _process_one(  # noqa: PLR0913
 
     try:
         sink.advance_phase("files")
-        registered, skipped = _register_files(target, dataset, dataset_dir, oneprovider, sink)
+        registered, skipped = _register_files(
+            target,
+            dataset,
+            dataset_dir,
+            oneprovider,
+            sink,
+            config,
+        )
 
         sink.advance_phase("share")
         share_id = _ensure_share(target, dataset, dataset_dir, oneprovider)
@@ -122,6 +129,7 @@ def _process_one(  # noqa: PLR0913
                 share_id=share_id,
                 onezone=onezone,
                 oneprovider=oneprovider,
+                amend=config.amend,
             )
     except RecordRequirementError as exc:
         return DatasetOutcome(name=dataset.name, success=False, error=str(exc))
@@ -145,12 +153,13 @@ def _process_one(  # noqa: PLR0913
 # ─────────────────────────────────────────────────────────────────────────────
 
 
-def _register_files(
+def _register_files(  # noqa: PLR0913
     target: ResolvedTarget,
     dataset: OnedataDataset,
     dataset_dir: str,
     oneprovider: OneproviderClient,
     sink: ProgressSink,
+    config: RegisterConfig,
 ) -> tuple[int, int]:
     registered = 0
     skipped = 0
@@ -160,6 +169,21 @@ def _register_files(
 
         existing = oneprovider.lookup_file_id(space_name=target.space_name, path=dest_path)
         if existing:
+            if config.amend:
+                provider_id = oneprovider.get_provider_id()
+                if provider_id:
+                    location = oneprovider.get_file_storage_location(existing, provider_id)
+                    if location != file_info.url:
+                        oneprovider.remove_file(existing)
+                        oneprovider.register_file(
+                            storage_id=target.storage_id,
+                            space_id=target.space_id,
+                            file_url=file_info.url,
+                            dest_path=dest_path,
+                        )
+                        registered += 1
+                        sink.tick_file()
+                        continue
             skipped += 1
             sink.tick_file()
             continue
@@ -212,13 +236,14 @@ def _find_or_create_share(
     return oneprovider.create_share(file_id=file_id, name=name, description=description)
 
 
-def _ensure_public_record(
+def _ensure_public_record(  # noqa: PLR0913
     *,
     config: PublicDataRecords,
     dataset: OnedataDataset,
     share_id: str,
     onezone: OnezoneClient,
     oneprovider: OneproviderClient,
+    amend: bool,
 ) -> str:
     """Return the public-data-record identifier for `dataset`.
 
@@ -234,6 +259,14 @@ def _ensure_public_record(
     details = oneprovider.get_share_details(share_id) or {}
     existing: str | None = details.get("handleId")
     if existing:
+        if amend:
+            metadata_details = onezone.get_handle_details(existing).get("metadata")
+            metadata_matches = metadata_details == dataset.metadata_xml
+            if not metadata_matches:
+                onezone.update_handle(
+                    handle_id=existing,
+                    metadata_xml=dataset.metadata_xml,
+                )
         return existing
 
     request_public_handle = config.record_identifier_type == "pid"

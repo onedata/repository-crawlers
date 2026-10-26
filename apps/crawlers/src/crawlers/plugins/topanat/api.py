@@ -82,7 +82,9 @@ class TopanatClient:
         `_links.associations` URL we want to use as the JSON file (avoids
         hand-constructing it) and works for both EFO_ and MONDO_ short forms.
         """
-        result = await self._http.get_json_object(f"/gwas/rest/api/efoTraits/{short_form}")
+        result = await self._http.get_json_object(
+            f"/gwas/rest/api/v2/associations?efo_id={short_form}"
+        )
         if isinstance(result, Err):
             return result
 
@@ -90,7 +92,7 @@ class TopanatClient:
         label = str(payload.get("trait") or "")
         uri = str(payload.get("uri") or "")
         associations_url = _extract_associations_link(payload) or (
-            f"https://www.ebi.ac.uk/gwas/rest/api/efoTraits/{short_form}/associations"
+            f"https://www.ebi.ac.uk/gwas/rest/api/v2/associations?efo_id={short_form}"
         )
 
         description = await self._fetch_ols_description(uri) if uri else None
@@ -177,7 +179,7 @@ def build_trait_tsv_url(short_form: str) -> str:
 
 def build_publication_json_url(pmid: str) -> str:
     """JSON associations URL for a publication."""
-    return f"https://www.ebi.ac.uk/gwas/api/v2/publications/{pmid}/associations"
+    return f"https://www.ebi.ac.uk/gwas/rest/api/v2/associations?pubmed_id={pmid}"
 
 
 def build_publication_tsv_url(pmid: str) -> str:
