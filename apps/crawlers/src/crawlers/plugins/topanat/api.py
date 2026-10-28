@@ -83,13 +83,13 @@ class TopanatClient:
         hand-constructing it) and works for both EFO_ and MONDO_ short forms.
         """
         result = await self._http.get_json_object(
-            f"/gwas/rest/api/v2/associations?efo_id={short_form}"
+            f"/gwas/rest/api/v2/efo-traits/{short_form}"
         )
         if isinstance(result, Err):
             return result
 
         payload = result.value
-        label = str(payload.get("trait") or "")
+        label = str(payload.get("efo_trait") or "")
         uri = str(payload.get("uri") or "")
         associations_url = _extract_associations_link(payload) or (
             f"https://www.ebi.ac.uk/gwas/rest/api/v2/associations?efo_id={short_form}"
